@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WaterWise Logger (SDG 6)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fb; }
+        /* Custom scrollbar for better visual appearance */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #10b981; border-radius: 3px; }
+    </style>
+</head>
+<body class="min-h-screen p-4 sm:p-8">
+    <div class="max-w-4xl mx-auto bg-white shadow-xl rounded-xl p-6 sm:p-8">
+        
+        <header class="mb-8 border-b pb-4">
+            <h1 class="text-3xl font-bold text-teal-600 flex items-center">
+                <svg class="w-8 h-8 mr-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21.6c-1.1-1.1-6-6-6-11.6a6 6 0 1112 0c0 5.6-4.9 10.5-6 11.6zM12 6a2 2 0 100 4 2 2 0 000-4z"></path></svg>
+                WaterWise Tracker (MongoDB)
+            </h1>
+            <p class="text-sm text-gray-500 mt-1">SDG 6: Water Consumption Logging</p>
+        </header>
+
+        <main class="grid md:grid-cols-3 gap-8">
+            
+            <section class="md:col-span-1">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700 border-b pb-2">Log New Usage</h2>
+                <form id="log-form" class="space-y-4 bg-teal-50 p-4 rounded-lg shadow-inner">
+                    <div>
+                        <label for="log-date" class="block text-sm font-medium text-gray-600 mb-1">Date</label>
+                        <input type="date" id="log-date" required class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="log-volume" class="block text-sm font-medium text-gray-600 mb-1">Volume (Liters)</label>
+                        <input type="number" id="log-volume" required min="1" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., 150">
+                    </div>
+                    <button type="submit" id="log-button" class="w-full py-2 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 transition duration-150 shadow-md">
+                        Record Usage
+                    </button>
+                    <div id="log-message" class="text-center text-sm font-medium hidden"></div>
+                </form>
+            </section>
+
+            <section class="md:col-span-2">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700 border-b pb-2">Water Usage Overview</h2>
+                
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500 shadow-md">
+                        <p class="text-sm text-gray-500">Total Liters Logged</p>
+                        <p id="total-usage" class="text-3xl font-extrabold text-blue-700 mt-1">0.00 L</p>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-lg border-l-4 border-green-500 shadow-md">
+                        <p class="text-sm text-gray-500">Total Entries</p>
+                        <p id="total-entries" class="text-3xl font-extrabold text-green-700 mt-1">0</p>
+                    </div>
+                </div>
+
+                <h3 class="text-lg font-medium mb-3 text-gray-700">Recent Logs</h3>
+                <div id="log-history" class="space-y-2 max-h-64 overflow-y-auto pr-2">
+                    <p class="text-gray-400 text-sm italic" id="loading-message">Loading logs...</p>
+                </div>
+            </section>
+
+        </main>
+
+    </div>
+    
+    <script>
+        // FIX: Changed API_URLs from relative paths to absolute URLs using the full localhost address.
+        // This resolves the "Failed to parse URL" error by ensuring the fetch call uses a complete URL format.
+        const BASE_URL = 'http://localhost:3001'; // Corrected port to match server.js
+        // ✅ FIX 1: Using backticks for template literals
+        const API_URL = `${BASE_URL}/api/summary`; 
+        const LOG_API_URL = `${BASE_URL}/api/log`;
+
+        // --- LOGIC FOR DISPLAYING DATA ---
+        
+        async function fetchLogsAndRender() {
+            const logHistoryDiv = document.getElementById('log-history');
+            // ✅ FIX 2: Using backticks for template literal
+            logHistoryDiv.innerHTML = `<p class="text-gray-400 text-sm italic">Fetching data from MongoDB...</p>`;
+            
+            try {
+                // Fetch data from the Express server endpoint
+                const response = await fetch(API_URL);
+                const data = await response.json();
+
+                if (!data.success) {
+                    // ✅ FIX 3: Using backticks for template literal
+                    logHistoryDiv.innerHTML = `<p class="text-red-500 text-sm italic">Error fetching data: ${data.message}</p>`;
+                    return;
+                }
+
+                const logs = data.logs;
+                let totalVolume = 0;
+                
+                // Calculate total volume
+                logs.forEach((log) => {
+                    totalVolume += log.volume;
+                });
+                
+                // Update Summary Cards
+                // ✅ FIX 4: Using backticks for template literal
+                document.getElementById('total-usage').innerText = `${totalVolume.toFixed(2)} L`;
+                document.getElementById('total-entries').innerText = logs.length;
+
+                // Clear history and render logs
+                logHistoryDiv.innerHTML = '';
+                
+                if (logs.length === 0) {
+                    logHistoryDiv.innerHTML = `<p class="text-gray-400 text-sm italic">No logs recorded yet.</p>`;
+                    return;
+                }
+
+                // Display recent 5 logs (logs are already sorted by the server)
+                logs.slice(0, 5).forEach(log => {
+                    const logItem = document.createElement('div');
+                    logItem.className = 'flex justify-between items-center p-3 bg-white border border-gray-200 rounded-md hover:bg-gray-50 transition-colors';
+                    logItem.innerHTML = `
+                        <span class="font-medium text-gray-800">${log.date}</span>
+                        <span class="text-teal-600 font-bold">${log.volume.toFixed(2)} L</span>
+                    `;
+                    logHistoryDiv.appendChild(logItem);
+                });
+
+                if (logs.length > 5) {
+                    // ✅ FIX 5: Using backticks for template literal
+                    logHistoryDiv.innerHTML += `<p class="text-center text-xs text-gray-500 mt-2">... and ${logs.length - 5} more entries</p>`;
+                }
+
+            } catch (error) {
+                console.error("Fetch error:", error);
+                // ✅ FIX 7: Updated the port reference to 3001
+                logHistoryDiv.innerHTML = `<p class="text-red-500 text-sm italic">Could not connect to the server (Is server.js running on http://localhost:3001?).</p>`;
+            }
+        }
+
+        // --- LOGIC FOR SAVING DATA ---
+        
+        async function logWaterUsage(event) {
+            event.preventDefault();
+
+            const dateInput = document.getElementById('log-date');
+            const volumeInput = document.getElementById('log-volume');
+            const logMessage = document.getElementById('log-message');
+            
+            const date = dateInput.value;
+            const volume = parseFloat(volumeInput.value);
+            
+            logMessage.classList.add('hidden');
+            logMessage.classList.remove('text-red-500', 'text-green-500');
+
+            if (!date || isNaN(volume) || volume <= 0) {
+                logMessage.innerText = "Please enter a valid date and positive volume.";
+                logMessage.classList.remove('hidden');
+                logMessage.classList.add('text-red-500');
+                return;
+            }
+
+            try {
+                // Post data to the Express server endpoint
+                const response = await fetch(LOG_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ date, volume })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    logMessage.innerText = "Usage recorded successfully!";
+                    logMessage.classList.remove('hidden');
+                    logMessage.classList.add('text-green-500');
+                    
+                    // Reset form fields
+                    dateInput.value = '';
+                    volumeInput.value = '';
+                    
+                    // Update UI immediately
+                    fetchLogsAndRender();
+                } else {
+                    // ✅ FIX 6: Using backticks for template literal
+                    logMessage.innerText = `Error: ${data.message}`;
+                    logMessage.classList.remove('hidden');
+                    logMessage.classList.add('text-red-500');
+                }
+
+            } catch (error) {
+                console.error("Error logging usage:", error);
+                logMessage.innerText = "Failed to communicate with the server.";
+                logMessage.classList.remove('hidden');
+                logMessage.classList.add('text-red-500');
+            }
+        }
+        
+        // Attach event listeners and run initial load
+        window.onload = function() {
+            document.getElementById('log-form').addEventListener('submit', logWaterUsage);
+            fetchLogsAndRender();
+        };
+
+    </script>
+</body>
+</html>
