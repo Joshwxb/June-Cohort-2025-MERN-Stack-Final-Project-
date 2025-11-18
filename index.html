@@ -69,10 +69,10 @@
     </div>
     
     <script>
-        // FIX: Changed API_URLs from relative paths to absolute URLs using the full localhost address.
-        // This resolves the "Failed to parse URL" error by ensuring the fetch call uses a complete URL format.
-        const BASE_URL = 'http://localhost:3001'; // Corrected port to match server.js
-        // ✅ FIX 1: Using backticks for template literals
+        // CRITICAL: This MUST be replaced with your live Render URL 
+        // (e.g., 'https://waterwise-api.onrender.com') before the final Vercel deployment.
+        const BASE_URL = 'YOUR_RENDER_BACKEND_URL'; 
+        
         const API_URL = `${BASE_URL}/api/summary`; 
         const LOG_API_URL = `${BASE_URL}/api/log`;
 
@@ -80,7 +80,6 @@
         
         async function fetchLogsAndRender() {
             const logHistoryDiv = document.getElementById('log-history');
-            // ✅ FIX 2: Using backticks for template literal
             logHistoryDiv.innerHTML = `<p class="text-gray-400 text-sm italic">Fetching data from MongoDB...</p>`;
             
             try {
@@ -89,7 +88,6 @@
                 const data = await response.json();
 
                 if (!data.success) {
-                    // ✅ FIX 3: Using backticks for template literal
                     logHistoryDiv.innerHTML = `<p class="text-red-500 text-sm italic">Error fetching data: ${data.message}</p>`;
                     return;
                 }
@@ -103,7 +101,6 @@
                 });
                 
                 // Update Summary Cards
-                // ✅ FIX 4: Using backticks for template literal
                 document.getElementById('total-usage').innerText = `${totalVolume.toFixed(2)} L`;
                 document.getElementById('total-entries').innerText = logs.length;
 
@@ -127,14 +124,13 @@
                 });
 
                 if (logs.length > 5) {
-                    // ✅ FIX 5: Using backticks for template literal
                     logHistoryDiv.innerHTML += `<p class="text-center text-xs text-gray-500 mt-2">... and ${logs.length - 5} more entries</p>`;
                 }
 
             } catch (error) {
                 console.error("Fetch error:", error);
-                // ✅ FIX 7: Updated the port reference to 3001
-                logHistoryDiv.innerHTML = `<p class="text-red-500 text-sm italic">Could not connect to the server (Is server.js running on http://localhost:3001?).</p>`;
+                // Updated message to be generic for deployment
+                logHistoryDiv.innerHTML = `<p class="text-red-500 text-sm italic">Could not connect to the backend API. Check the deployed URL.</p>`;
             }
         }
 
@@ -182,7 +178,6 @@
                     // Update UI immediately
                     fetchLogsAndRender();
                 } else {
-                    // ✅ FIX 6: Using backticks for template literal
                     logMessage.innerText = `Error: ${data.message}`;
                     logMessage.classList.remove('hidden');
                     logMessage.classList.add('text-red-500');
