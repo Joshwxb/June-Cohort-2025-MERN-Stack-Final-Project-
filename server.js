@@ -4,11 +4,13 @@ require('dotenv').config();
 const express = require('express');
 const { MongoClient } = require('mongodb');
 const cors = require('cors');
-const path = require('path'); // Required for file paths
+const path = require('path'); 
 
 const app = express();
-// Setting the port to 3001 to avoid common conflicts with 3000
-const port = 3001; 
+
+// 🚀 CRITICAL CHANGE FOR DEPLOYMENT: 
+// Use the PORT provided by the hosting environment (Render), or default to 3001 locally.
+const port = process.env.PORT || 3001; 
 
 // --- CONFIGURATION ---
 const MONGO_URI = process.env.MONGO_URI;
@@ -18,9 +20,9 @@ let waterLogsCollection;
 
 // --- MIDDLEWARE ---
 app.use(cors());
-app.use(express.json()); // Middleware to parse JSON bodies
+app.use(express.json()); 
 
-// Serve all static files from the current directory (where server.js lives).
+// Serve all static files (good for local testing)
 app.use(express.static(path.join(__dirname)));
 
 // Explicitly handle the root path ("/") to guarantee index.html loads.
@@ -30,7 +32,6 @@ app.get('/', (req, res) => {
 
 // --- DATABASE CONNECTION ---
 async function connectDB() {
-    // 💡 Added check for MONGO_URI
     if (!MONGO_URI) {
         console.error('FATAL ERROR: MONGO_URI is not defined. Please check your .env file.');
         process.exit(1);
@@ -53,17 +54,16 @@ async function connectDB() {
 // 1. GET /api/summary - Retrieves ALL logs
 app.get('/api/summary', async (req, res) => {
     try {
-        // Since there is no user filtering, this returns all logs from the database.
-        const logs = await waterLogsCollection.find({}).sort({ timestamp: -1 }).toArray(); // Added sorting for recent logs first
+        const logs = await waterLogsCollection.find({}).sort({ timestamp: -1 }).toArray(); 
         
         res.json({ success: true, logs: logs }); 
         
     } catch (error) {
         console.error("Error fetching logs:", error);
-        // Added 'success: false' to the error response for clarity
         res.status(500).json({ success: false, message: 'Failed to fetch logs.' }); 
     }
 });
+
 // 2. POST /api/log - Saves a new water usage entry (without user ID)
 app.post('/api/log', async (req, res) => {
     const { date, volume } = req.body;
@@ -74,7 +74,6 @@ app.post('/api/log', async (req, res) => {
 
     try {
         const newLog = {
-            // userId is intentionally omitted as requested (authentication removed)
             date: date,
             volume: parseFloat(volume),
             timestamp: new Date()
@@ -94,7 +93,7 @@ app.post('/api/log', async (req, res) => {
 // --- SERVER STARTUP ---
 connectDB().then(() => {
     app.listen(port, () => {
-        // ✅ CORRECTED: Using backticks (`) for the template literal
+        // Now logs the correct port, whether local or deployed
         console.log(`Server running at http://localhost:${port}`);
     });
 });
