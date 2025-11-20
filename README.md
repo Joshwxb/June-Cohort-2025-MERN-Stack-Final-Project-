@@ -33,7 +33,7 @@ To run this application, you must have the following installed:
 
 ### 2. Clone the Repository
 ```bash
-git clone https://github.com/Joshwxb/waterwise-frontend.git
+git clone https://github.com/Joshwxb/June-Cohort-2025-MERN-Stack-Final-Project-.git
 cd WaterWise
 3. Install Dependencies
 npm install express mongodb dotenv cors
@@ -55,13 +55,8 @@ Expected terminal output:
 ✅ Connected successfully to MongoDB
 Server running at http://localhost:3001
 
-Access the Application
-
-Open your browser at:
-
-http://localhost:3001
-
-
-You can now log water usage, and entries will be saved to MongoDB under the fixed user ID.
-git clone https://github.com/Joshwxb/waterwise-frontend.git
+### Access the Application
+**Open your browser at the following link to start using WaterWise:**
+**[waterwise-five.vercel.app]**
 cd WaterWise
+
